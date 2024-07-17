@@ -54,3 +54,4 @@ In order to run the project, you need to have go intalled on your machine. Then 
 # Result
 
 The resulting image is saved at model.png
+![no available](model.png "Model")
