@@ -1,0 +1,41 @@
+{
+  "particles": [
+    {
+      "x": 250,
+      "y": 250,
+      "vx": 0.6,
+      "vy": -0.4,
+      "color": [255, 0, 255, 255],
+      "mass": "2 MT",
+      "key": "particle-1"
+    },
+    {
+      "x": 750,
+      "y": 750,
+      "vx": -0.6,
+      "vy": 0.4,
+      "color": [250, 255, 100, 255],
+      "mass": "2 MT",
+      "key": "particle-2"
+    },
+    {
+      "x": 500,
+      "y": 500,
+      "vx": 0.0,
+      "vy": 0.0,
+      "color": [0, 200, 200, 255],
+      "mass": "0.2 MT",
+      "key": "particle-3"
+    }
+  ],
+  "iterations": 2000,
+
+  "video": {
+    "size": {
+      "x": 1000,
+      "y": 1000
+    },
+    "fps": 8,
+    "filename": "output.avi"
+  }
+}

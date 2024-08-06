@@ -6,3 +6,9 @@ run:
 
 tidy:
 	go mod tidy
+
+play:
+	ffplay output.avi
+
+reset:
+	rm -rf images && mkdir images
