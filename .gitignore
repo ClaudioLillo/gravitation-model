@@ -21,5 +21,8 @@
 go.work
 go.work.sum
 
-# Generated model
-model.png
+# Generated images
+images
+
+#Generated video
+*.avi

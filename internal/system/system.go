@@ -4,6 +4,8 @@ import (
 	"image/color"
 	"log"
 	"math"
+	"strconv"
+	"strings"
 
 	"github.com/claudiolillo/gravitation-model/internal/constants"
 	"github.com/claudiolillo/gravitation-model/internal/utils"
@@ -20,7 +22,10 @@ var T = 1.0
 var SCALE = 1e-12
 
 type Particle struct {
-	X, Y, Vx, Vy float64
+	X float64 `json:"x"`
+	Y float64 `json:"y"`
+	Vx float64 `json:"vx"`
+	Vy float64 `json:"vy"`
 	Color color.Color
 	Key string
 	Context []string
@@ -29,6 +34,32 @@ type Particle struct {
 
 type System struct {
 	Particles map[string]*Particle
+}
+type ConfigParticle struct{
+	X float64 `json:"x"`
+	Y float64 `json:"y"`
+	Vx float64 `json:"vx"`
+	Vy float64 `json:"vy"`
+	Color []uint8
+	Key string
+	Context []string
+	Mass string
+}
+type Config struct {
+	Particles []ConfigParticle `json:"particles"`
+	Video OutputVideo `json:"video"`
+	Iterations int `json:"iterations"`
+}
+
+type OutputVideo struct {
+	Size VideoSize `json:"size"`
+	FPS int `json:"fps"`
+	Filename string `json:"filename"`
+}
+
+type VideoSize struct {
+	X int `json:"x"`
+	Y int `json:"y"`
 }
 
 
@@ -46,6 +77,25 @@ type Modifier struct {
 
 func (s *System) AddParticle(p *Particle ) {
 	s.Particles[p.Key] = p
+}
+
+func GetMassFromConfig(mass string) float64{
+	var unit float64
+	values := strings.Split(mass, " ")
+	
+	switch values[1] {
+	case "KTON":
+		unit = constants.KTON
+	default:
+		unit = constants.MT
+	}
+	quantity,_ := strconv.ParseFloat(values[0],64)
+	return  quantity * unit
+}
+
+func GetParticleFromConfig(p *ConfigParticle) Particle{
+	particle := Particle{X: p.X, Y: p.Y, Vx: p.Vx, Vy: p.Vy, Color: color.RGBA{p.Color[0],p.Color[1],p.Color[2],p.Color[3]}, Mass: GetMassFromConfig(p.Mass), Key: p.Key}
+	return particle
 }
 
 func (s *System) Describe(){

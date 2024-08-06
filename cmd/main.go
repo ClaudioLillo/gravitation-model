@@ -1,51 +1,162 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
 	"image"
-	"image/color"
+	"image/jpeg"
+	"io"
+	"os"
+	"os/exec"
+	"strconv"
+	"strings"
+	"sync"
 
-	"github.com/claudiolillo/gravitation-model/internal/constants"
 	"github.com/claudiolillo/gravitation-model/internal/system"
-	"github.com/llgcode/draw2d/draw2dimg"
+	"github.com/icza/mjpeg"
 )
 
+var wg sync.WaitGroup
 
+func checkErr(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
+func addPixel(image *image.NRGBA ,particle *system.Particle, stroke int){
+	for i:=0;i<stroke;i++{
+		for j:=0;j<stroke;j++{
+			image.Set(int(particle.X) + i, int(particle.Y) + j, particle.Color)
+		}
+	}
+}
+
+func getPercentaje(fn string, total int) (int){
+	start := strings.Index(fn, "-") + 1
+	end := strings.Index(fn,".")
+	value, err := strconv.Atoi(fn[start:end])
+	if err != nil {
+		fmt.Println("Not able to get percentaje")
+	}
+	return (value + 1) * 100/total
+}
 
 func main() {
-	// Initialize the graphic context on an RGBA image
-	dest := image.NewRGBA(image.Rect(0, 0, 1000, 1000))
-	gc := draw2dimg.NewGraphicContext(dest)
+
+	jsonFile, err := os.Open("config.json")
+
+	if err!=nil {
+		fmt.Println(err)
+	}
+
+	defer jsonFile.Close()
+
+	byteValue, readErr := io.ReadAll(jsonFile)
+
+	if readErr!=nil{
+		fmt.Println(readErr)
+	}
+
+	var config system.Config
+
+	json.Unmarshal(byteValue, &config)
 
 	sys := system.New()
 
-	// Here you can set particles providing initial position, mass, speed and a color to trace
-	p1 := &system.Particle{X: 250, Y: 250, Vx: 0.5, Vy: -0.4, Color: color.RGBA{255,0,255,255}, Mass: 2 * constants.MT, Key: "1"}
-	p2 := &system.Particle{X: 750, Y: 750, Vx: -0.5, Vy: 0.4, Color: color.RGBA{250, 255, 100, 255}, Mass: 2 * constants.MT, Key: "2"}
-
-	// Particles should be added to the system
-	sys.AddParticle(p1)
-	sys.AddParticle(p2)
+	for _,value := range(config.Particles){
+		p := system.GetParticleFromConfig(&value)
+		sys.AddParticle(&p)
+	}
 
 	// The system is build
 	sys.Build()
 
-	for i := 0; i < 10500; i++ {
-		// line width (float)
-		lw := 3.0
-		for _, value := range sys.Particles {
-			gc.SetFillColor(color.RGBA{0x44, 0xff, 0x44, 0xff})
-			gc.SetStrokeColor(value.Color)
-			gc.SetLineWidth(1)
-			gc.MoveTo(value.X, value.Y)
-			gc.LineTo(value.X + lw, value.Y)
-			gc.LineTo(value.X + lw, value.Y + lw)
-			gc.LineTo(value.X, value.Y + lw)
-			gc.FillStroke()
+	runSystem := func(c chan *system.System, sys *system.System ){
+		defer wg.Done()
+		for i:=0; i< config.Iterations; i++ {
+			sys.Next()
+			c <- sys
 		}
-		sys.Describe()
-		sys.Next()
+		close(c)
 	}
+
+	states := make(chan *system.System)
+	wg.Add(1)
+	go runSystem(states, sys)
+
+	saveImages := func(c chan string, states chan *system.System){
+		defer wg.Done()
+		count := 0
+		for state := range states {
+			rect := image.Rect(0,0,config.Video.Size.X,config.Video.Size.Y)
+			img := image.NewNRGBA(rect)
+			for _, particle := range state.Particles {
+				addPixel(img, particle, 5)
+			}
+			fn := fmt.Sprintf("images/image-%s.jpg",strconv.Itoa(count))
+			imgFile,_ := os.Create(fn)
+			defer imgFile.Close()
+			c <- fn
 	
-	// Save to file
-	draw2dimg.SaveToPngFile("model.png", dest)
+		jpeg.Encode(imgFile, img, nil)
+		count++
+	}
+		close(c)
+	}
+
+	fileNames := make(chan string)
+	wg.Add(1)
+	go saveImages(fileNames, states)
+	
+	aw, err := mjpeg.New(config.Video.Filename, int32(config.Video.Size.X),int32(config.Video.Size.Y),int32(config.Video.FPS))
+
+	if err!=nil {
+		panic(err)
+	}
+
+
+	for f := range fileNames {
+		percentaje := getPercentaje(f, config.Iterations)
+		bars := percentaje/2
+		for c:=0;c<bars;c++{
+			fmt.Print("▮")
+		}
+	
+		for c:=0;c<50 - bars;c++{
+			fmt.Print(" ")
+		}
+
+		fmt.Printf(" %s%% ", strconv.Itoa(percentaje))
+		cmd := exec.Command("clear")
+		cmd.Stdout = os.Stdout
+		cmd.Run()
+
+		data, err := os.ReadFile(f)
+		
+		if err!=nil {
+			panic(err)
+		}
+		checkErr(aw.AddFrame(data))
+	}
+
+	wg.Wait()
+	checkErr(aw.Close())
+
+		
+			
+		
+	
+		
+
+		
+		
+		
+	
+
+	
+
+	
+
+	
 }
