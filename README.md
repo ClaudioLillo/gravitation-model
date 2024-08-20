@@ -3,7 +3,7 @@
 This project provide a simulation of movement of N particles in a flat space
 determined by their mass, initial position, inititial speed, and gravity force.
 
-The scale of representation is `1 pixel : 1e12 m`
+The scale of representation is `1 pixel : 1e12 meters`
 
 Mass can be represented using constants
 
@@ -25,19 +25,15 @@ On the main.go file you should
 sys := system.New()
 ```
 
-2. Define your particles, providing position and velocity for both axis, mass, a string key and a color to trace
+2. Define your particles, providing position and velocity for both axis, mass, a string key and a color to trace. They should be added on config.json file
 
-```go
-p1 := &system.Particle{X: 250, Y: 250, Vx: 0.5, Vy: -0.4, Color: color.RGBA{255,0,255,255}, Mass: 2 * constants.MT, Key: "1"}
-```
-
-3. Add your particles to the system
+3. Your particles will be automatically added to the system
 
 ```go
 sys.AddParticle(p1)
 ```
 
-4. Build the system
+4. Then, the system will be initialized
 
 ```go
 sys.Build()
@@ -53,5 +49,4 @@ In order to run the project, you need to have go intalled on your machine. Then 
 
 # Result
 
-The resulting image is saved at model.png
-![no available](model.png "Model")
+The resulting images will be saved on /images directory, and an output video will be created from this source
